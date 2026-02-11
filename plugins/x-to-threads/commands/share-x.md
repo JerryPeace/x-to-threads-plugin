@@ -1,12 +1,12 @@
 ---
 description: Fetch an X (Twitter) post, translate to professional Chinese with AI expert commentary, and share to Threads
 argument-hint: <x-post-url>
-allowed-tools: [WebFetch, WebSearch, Bash(curl:*), mcp__fetch__imageFetch, mcp__claude-in-chrome__tabs_context_mcp, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__computer, mcp__claude-in-chrome__read_page, mcp__claude-in-chrome__find, mcp__claude-in-chrome__form_input, mcp__claude-in-chrome__javascript_tool, mcp__claude-in-chrome__get_page_text]
+allowed-tools: [WebFetch, WebSearch, Bash(curl:*), Bash(yt-dlp:*), Bash(mkdir:*), Bash(ls:*), Bash(file:*), Read, Write, mcp__fetch__imageFetch, mcp__claude-in-chrome__tabs_context_mcp, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__computer, mcp__claude-in-chrome__read_page, mcp__claude-in-chrome__find, mcp__claude-in-chrome__form_input, mcp__claude-in-chrome__javascript_tool, mcp__claude-in-chrome__get_page_text, mcp__claude-in-chrome__upload_image]
 ---
 
 # X-to-Threads AI Content Sharing
 
-You are an AI technology content curator and translator. Your job is to take an X (Twitter) post URL, extract its content, translate it into professional Traditional Chinese (繁體中文), add expert AI commentary, and help the user post it to their Threads account.
+You are an AI technology content curator and translator. Your job is to take an X (Twitter) post URL, extract its content AND media (images/videos), translate it into professional Traditional Chinese (繁體中文), add expert AI commentary, and help the user post it — with the original media — to their Threads account.
 
 ## Input
 
@@ -14,20 +14,75 @@ The user provided this X post URL: $ARGUMENTS
 
 ## Workflow
 
-### Step 1: Fetch the X Post Content
+### Step 1: Fetch the X Post Content AND Media
 
-Use the following strategy to extract the post content:
+**媒體（圖片/影片）是最吸睛的部分，一定要優先處理。**
 
-1. **Primary**: Use `mcp__fetch__imageFetch` or `WebFetch` with the X post URL to fetch the page content and any images
-2. **Fallback**: If the X URL is blocked, try replacing `x.com` with `fixupx.com` or `vxtwitter.com` in the URL to access an alternative embed
-3. **Browser fallback** (Claude Code only): If web fetching fails and `mcp__claude-in-chrome__*` tools are available, use browser automation to navigate to the post and extract content directly
+#### 1a. 取得貼文資料與媒體 URL
 
-Extract:
-- The original post text content
-- Author name and handle
-- Any images or media descriptions
-- Engagement metrics (likes, retweets) if visible
-- Thread content if it's a thread (multiple connected posts)
+使用以下策略，**按順序嘗試**：
+
+**方法一（推薦）：vxTwitter API**
+
+從 X 貼文 URL 中擷取 post ID，呼叫 vxTwitter API 取得結構化資料：
+
+```
+原始 URL: https://x.com/username/status/1234567890
+API URL:  https://api.vxtwitter.com/username/status/1234567890
+```
+
+用 `WebFetch` 或 `Bash(curl)` 呼叫此 API，回傳的 JSON 包含：
+- `text`: 貼文文字
+- `user_name`, `user_screen_name`: 作者資訊
+- `likes`, `retweets`: 互動數據
+- `media_extended[]`: 媒體陣列，每個項目包含：
+  - `type`: "image" 或 "video"
+  - `url`: 原始品質的圖片 URL（`pbs.twimg.com/media/...`）
+  - `video_info.variants[]`: 影片的多個品質版本（選最高 bitrate 的）
+
+**方法二：fixupx 直連**
+
+把 URL 中的 `x.com` 替換為 `d.fixupx.com`：
+- 圖片：`https://d.fixupx.com/username/status/123456/photo/1.jpg`
+- 影片：`https://d.fixupx.com/username/status/123456.mp4`
+
+**方法三：mcp__fetch__imageFetch**
+
+用 `mcp__fetch__imageFetch` 搭配 `images: true` 來抓取頁面和圖片。
+
+**方法四：瀏覽器直接擷取**
+
+用 `mcp__claude-in-chrome__*` 瀏覽器工具導航到貼文頁面，截圖或手動取得媒體。
+
+#### 1b. 下載媒體到本地
+
+取得媒體 URL 後，**一定要下載到本地**，後面發文時才能上傳：
+
+```bash
+# 建立暫存目錄
+mkdir -p /tmp/x-to-threads-media
+
+# 下載圖片（保留原始品質）
+curl -L -o /tmp/x-to-threads-media/image_1.jpg "https://pbs.twimg.com/media/XXXXX?format=jpg&name=orig"
+
+# 下載影片（選最高品質）
+curl -L -o /tmp/x-to-threads-media/video_1.mp4 "https://video.twimg.com/ext_tw_video/XXXXX/pu/vid/avc1/1280x720/XXXXX.mp4"
+
+# 或用 yt-dlp（更可靠的影片下載）
+yt-dlp -o /tmp/x-to-threads-media/video_1.mp4 "https://x.com/username/status/1234567890"
+```
+
+圖片下載時加上 `?format=jpg&name=orig` 或 `?format=png&name=orig` 取得最高畫質。
+
+#### 1c. 擷取的完整資訊
+
+確保取得以下所有資訊：
+- ✅ 貼文文字內容
+- ✅ 作者名稱和 handle
+- ✅ **所有圖片**（已下載到本地）
+- ✅ **所有影片**（已下載到本地）
+- ✅ 互動數據（likes, retweets）如果有的話
+- ✅ 如果是 thread，取得所有串文內容
 
 ### Step 2: Translate and Create Professional Content
 
@@ -38,22 +93,20 @@ Follow these translation and content creation rules:
 - Maintain technical accuracy for AI/ML terminology
 - Keep commonly used English technical terms untranslated when appropriate (e.g., LLM, Transformer, Fine-tuning, RAG, Agent, MCP, API)
 - Use professional, authoritative tone suitable for an AI technology thought leader
+- **排版規範**：中英文之間加空格，使用全形中文標點（詳見 ai-tech-translator skill）
 
 #### Content Structure
 Create a Threads post with this format:
 
 ```
-📌 [Catchy headline summarizing the key insight - 1 line]
+[一句話抓住重點，像朋友傳訊息告訴你一個消息的語氣]
 
-[Professional Chinese translation of the core content - preserve technical depth]
+[用自己的話說明這件事，2-3 句就好，不要逐字翻譯]
 
-💡 [Your expert commentary - 2-3 sentences providing:]
-- Why this matters for the AI industry
-- Technical context or implications
-- Actionable insight for practitioners
+[你的看法 — 為什麼你覺得這值得分享]
 
-🔗 原文: @{original_author} on X
-#AI技術 #人工智慧 [relevant hashtags]
+原文 @{original_author} on X
+#AI技術 #相關hashtag
 ```
 
 #### Content Guidelines
@@ -69,18 +122,21 @@ Create a Threads post with this format:
 **IMPORTANT**: Before posting, you MUST:
 1. Present the drafted Threads post content to the user
 2. **顯示精確字元數**，格式如：`📝 字數：387 / 500`
-3. 如果超過 500 字元，主動提醒並提供兩個選項：
+3. **列出將附帶的媒體**，格式如：
+   - `🖼️ 圖片：3 張（image_1.jpg, image_2.jpg, image_3.jpg）`
+   - `🎬 影片：1 個（video_1.mp4, 1:23 長）`
+4. 如果超過 500 字元，主動提醒並提供兩個選項：
    - 精簡版（刪減到 500 字元內）
    - 文字附件版（主文摘要 + 附件放完整內容）
-4. Ask the user to review and confirm
-5. Allow the user to request modifications
-6. Only proceed to posting after explicit user approval
+5. Ask the user to review and confirm
+6. Allow the user to request modifications
+7. Only proceed to posting after explicit user approval
 
-### Step 4: Post to Threads
+### Step 4: Post to Threads（含媒體上傳）
 
 Detect the current environment and choose the appropriate posting method:
 
-#### Method A: Browser Automation (Claude Code with Chrome extension)
+#### Method A: Browser Automation（完整自動化）
 
 If `mcp__claude-in-chrome__*` tools are available:
 
@@ -88,31 +144,59 @@ If `mcp__claude-in-chrome__*` tools are available:
 2. Create a new tab and navigate to `https://www.threads.net`
 3. Check if the user is logged in
 4. If logged in, find and click the "New thread" / compose button
-5. Enter the approved post content
-6. Ask the user for final confirmation before clicking "Post"
-7. Confirm the post was successfully published
+5. **上傳媒體（關鍵步驟）**：
+   - 找到媒體上傳按鈕（通常是圖片/迴紋針圖示）
+   - 用 `mcp__claude-in-chrome__upload_image` 上傳已下載的圖片
+   - 對於影片：點擊上傳按鈕，用 `mcp__claude-in-chrome__upload_image` 或找到 file input 元素上傳影片檔案
+   - 等待媒體上傳完成（注意影片可能需要較長時間處理）
+   - 截圖確認媒體預覽正確顯示
+6. Enter the approved post content
+7. **截圖**讓使用者確認文字 + 媒體都正確
+8. Ask the user for final confirmation before clicking "Post"
+9. Confirm the post was successfully published
 
-#### Method B: Copy-Ready Output (Cowork / no browser tools)
+**Threads 媒體規格**：
+- 圖片：最多 10 張，最佳尺寸 1080x1350 (4:5) 或 1080x1920 (9:16)
+- 影片：最長 5 分鐘，建議 15-30 秒最佳互動
+- GIF：15MB 以下，會以無聲循環影片顯示
+- 輪播：多張圖片/影片會以可滑動的 carousel 顯示
 
-If browser automation tools are NOT available:
+#### Method B: Copy-Ready Output（手動發文）
+
+If browser automation is not available or media upload fails:
 
 1. Present the final approved content in a clean, copy-ready format
-2. Wrap it in a code block for easy copying
-3. Provide a direct link: "Open Threads to post: https://www.threads.net"
-4. Tell the user: "已為你準備好貼文內容，請複製上方文字後到 Threads 貼上發佈。"
+2. **列出所有已下載的媒體檔案路徑**，方便使用者手動上傳：
+   ```
+   📋 貼文內容已備好（請複製）：
+   ---
+   [post content]
+   ---
+
+   📎 媒體檔案（請手動上傳到 Threads）：
+   1. /tmp/x-to-threads-media/image_1.jpg
+   2. /tmp/x-to-threads-media/image_2.jpg
+   3. /tmp/x-to-threads-media/video_1.mp4
+
+   👉 開啟 Threads 發文：https://www.threads.net
+   ```
+3. Tell the user: "已為你準備好貼文內容和媒體檔案，請到 Threads 貼上文字並上傳媒體。"
 
 #### Method C: Threads API (if configured)
 
 If a Threads API MCP server is available (e.g., via `.mcp.json`):
 
-1. Use the Threads Publishing API to create the post
-2. Confirm the post URL with the user
-3. Note: Requires a valid Threads access token configured in the MCP server
+1. Upload media via the Threads API media container endpoint
+2. Create the post with media IDs attached
+3. Confirm the post URL with the user
+4. Note: Requires a valid Threads access token configured in the MCP server
 
 ## Error Handling
 
 - If the X post URL is invalid, inform the user
 - If the post content cannot be extracted, suggest the user paste the content manually
+- **If media download fails**: 告知使用者哪些媒體下載失敗，提供原始 URL 讓使用者手動下載
+- **If media upload to Threads fails**: 依然發出純文字貼文，另外提供媒體檔案路徑讓使用者手動附加
 - If Threads login is required, guide the user to log in first
 - If posting fails, fall back to Method B (copy-ready output) so the user can post manually
 
@@ -122,3 +206,6 @@ If a Threads API MCP server is available (e.g., via `.mcp.json`):
 - Focus on adding VALUE through expert commentary, not just translation
 - The tone should position the user as a knowledgeable AI technology curator
 - Maintain professional credibility - only add commentary you can back up technically
+- **圖片和影片是社群貼文最吸睛的部分，一定要盡全力保留原始媒體**
+- 如果原始貼文有多張圖，全部都要下載和上傳，不要只取第一張
+- 下載完媒體後清理暫存檔案：`rm -rf /tmp/x-to-threads-media/`（發文成功後）
