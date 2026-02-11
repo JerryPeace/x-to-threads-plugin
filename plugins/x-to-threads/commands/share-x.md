@@ -57,9 +57,10 @@ Create a Threads post with this format:
 ```
 
 #### Content Guidelines
-- Keep the total post under 500 characters (Threads limit)
-- If the original is too long, distill the key points
-- Add relevant hashtags in Chinese: #AI技術 #人工智慧 etc.
+- **字數限制**：一般貼文上限 500 字元（中文字、英文字母、空格、emoji 都各算 1 字元）
+- 如果原文是長 thread 或使用者要求完整翻譯，可以用文字附件模式（上限 10,000 字元）
+- If the original is too long, distill the key points — 不要硬塞，寧短勿爛
+- hashtag 和出處 attribution 都算在字數內，先寫內容再塞 hashtag
 - Never fabricate information not present in the original
 - Add professional credibility through technical accuracy
 
@@ -67,10 +68,13 @@ Create a Threads post with this format:
 
 **IMPORTANT**: Before posting, you MUST:
 1. Present the drafted Threads post content to the user
-2. Show a character count to ensure it's under 500
-3. Ask the user to review and confirm
-4. Allow the user to request modifications
-5. Only proceed to posting after explicit user approval
+2. **顯示精確字元數**，格式如：`📝 字數：387 / 500`
+3. 如果超過 500 字元，主動提醒並提供兩個選項：
+   - 精簡版（刪減到 500 字元內）
+   - 文字附件版（主文摘要 + 附件放完整內容）
+4. Ask the user to review and confirm
+5. Allow the user to request modifications
+6. Only proceed to posting after explicit user approval
 
 ### Step 4: Post to Threads
 
