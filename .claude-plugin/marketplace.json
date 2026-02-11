@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "x-to-threads-marketplace",
+  "description": "Custom plugin marketplace for X-to-Threads AI content sharing workflow",
+  "owner": {
+    "name": "senao",
+    "email": "senao@local"
+  },
+  "plugins": [
+    {
+      "name": "x-to-threads",
+      "description": "Fetch X (Twitter) posts about AI technology, translate to professional Chinese with expert commentary, and share to Threads",
+      "version": "1.0.0",
+      "source": "./plugins/x-to-threads",
+      "category": "productivity"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "x-to-threads",
+  "description": "Fetch X (Twitter) posts about AI technology, translate to professional Chinese with expert commentary, and share to Threads",
+  "version": "1.0.0",
+  "author": {
+    "name": "senao",
+    "email": "senao@local"
+  }
+}
