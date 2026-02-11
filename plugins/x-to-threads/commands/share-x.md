@@ -18,37 +18,71 @@ The user provided this X post URL: $ARGUMENTS
 
 **媒體（圖片/影片）是最吸睛的部分，一定要優先處理。**
 
+#### 環境變數
+
+本 plugin 需要以下環境變數（在 shell profile 或 `.env` 中設定）：
+
+```bash
+export APIFY_API_TOKEN="apify_api_xxxxx"           # Apify API Token（必要）
+# export THREADS_ACCESS_TOKEN="xxxxx"               # Threads Publishing API Token（選配，未來用）
+# export THREADS_USER_ID="xxxxx"                    # Threads User ID（選配，未來用）
+```
+
 #### 1a. 取得貼文資料與媒體 URL
 
 使用以下策略，**按順序嘗試**：
 
-**方法一（推薦）：vxTwitter API**
+**方法一（推薦）：Apify Tweet Scraper**
 
-從 X 貼文 URL 中擷取 post ID，呼叫 vxTwitter API 取得結構化資料：
+使用已訂閱的 Apify actor `kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest`。
+費用：$0.25 / 1,000 tweets，非常便宜且穩定。
+
+```bash
+curl -X POST "https://api.apify.com/v2/acts/kaitoeasyapi~twitter-x-data-tweet-scraper-pay-per-result-cheapest/run-sync-get-dataset-items?token=$APIFY_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "startUrls": ["https://x.com/username/status/1234567890"],
+    "maxItems": 1
+  }'
+```
+
+此 API 為同步呼叫（`run-sync-get-dataset-items`），會等待 actor 執行完畢後直接回傳 JSON 結果。
+
+回傳的 JSON 陣列中每個 tweet 物件通常包含：
+- `full_text` 或 `text`：貼文文字
+- `user`：作者資訊（`name`, `screen_name`）
+- `entities.media[]` 或 `extended_entities.media[]`：媒體陣列
+  - `type`: "photo" / "video" / "animated_gif"
+  - `media_url_https`: 圖片 URL（加 `?format=jpg&name=orig` 取最高畫質）
+  - `video_info.variants[]`: 影片多品質版本（選 `content_type: "video/mp4"` 且最高 `bitrate`）
+- `favorite_count`, `retweet_count`: 互動數據
+- `quoted_status`: 引用推文（如果有的話，包含同樣的媒體結構）
+
+**注意**：如果回傳欄位名稱不同，根據實際回傳的 JSON 結構來取值即可。
+
+**方法二（免費備援）：vxTwitter API**
+
+如果 Apify token 未設定或呼叫失敗，使用免費的 vxTwitter API：
 
 ```
 原始 URL: https://x.com/username/status/1234567890
 API URL:  https://api.vxtwitter.com/username/status/1234567890
 ```
 
-用 `WebFetch` 或 `Bash(curl)` 呼叫此 API，回傳的 JSON 包含：
+回傳的 JSON 包含：
 - `text`: 貼文文字
 - `user_name`, `user_screen_name`: 作者資訊
 - `likes`, `retweets`: 互動數據
-- `media_extended[]`: 媒體陣列，每個項目包含：
+- `media_extended[]`: 媒體陣列
   - `type`: "image" 或 "video"
-  - `url`: 原始品質的圖片 URL（`pbs.twimg.com/media/...`）
-  - `video_info.variants[]`: 影片的多個品質版本（選最高 bitrate 的）
+  - `url`: 原始品質媒體 URL
+- `qrt`: 引用推文（如果有的話，結構相同）
 
-**方法二：fixupx 直連**
+**方法三：fixupx 直連**
 
 把 URL 中的 `x.com` 替換為 `d.fixupx.com`：
 - 圖片：`https://d.fixupx.com/username/status/123456/photo/1.jpg`
 - 影片：`https://d.fixupx.com/username/status/123456.mp4`
-
-**方法三：mcp__fetch__imageFetch**
-
-用 `mcp__fetch__imageFetch` 搭配 `images: true` 來抓取頁面和圖片。
 
 **方法四：瀏覽器直接擷取**
 
