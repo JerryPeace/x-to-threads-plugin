@@ -1,7 +1,7 @@
 ---
 name: ai-tech-translator
 description: This skill should be used when the user asks to "translate X post", "share to Threads", "translate AI content to Chinese", "curate AI content", mentions "X to Threads", "Twitter to Threads", or discusses translating English AI technology content to Traditional Chinese with professional commentary.
-version: 1.1.0
+version: 1.2.0
 ---
 
 # AI Technology Content Translator & Curator
@@ -45,6 +45,58 @@ Translate these concepts to Chinese:
 - multimodal → 多模態
 - context window → 上下文視窗
 - knowledge cutoff → 知識截止日期
+
+### 排版規範 — 中英混排與標點符號
+
+#### 中英文之間加空格
+
+中文與英文、數字之間**必須**加一個半形空格，讀起來才舒服。
+
+- ✅ "這次 Claude 的 context window 拉到 200K tokens"
+- ✅ "用 PyTorch 跑了 3 輪 Fine-tuning"
+- ✅ "Google 昨天發了一篇關於 MoE 的 paper"
+- ❌ "這次Claude的context window拉到200K tokens"
+- ❌ "用PyTorch跑了3輪Fine-tuning"
+
+具體規則：
+- 中文字與英文字母之間：`模型 → LLM 架構` ✅ `模型→LLM架構` ❌
+- 中文字與數字之間：`超過 100 億參數` ✅ `超過100億參數` ❌
+- 英文與半形標點之間不加空格：`Token, Embedding` ✅
+- 括號內外的空格：`推理成本（Inference Cost）降低` ✅
+- 連結前後加空格：`詳見 https://example.com 的說明` ✅
+- hashtag 前加空格：`很值得關注 #AI技術` ✅
+
+#### 中文標點符號規範
+
+使用**全形中文標點**，不要混用半形英文標點。
+
+| 用途 | 正確（全形） | 錯誤（半形） |
+|------|------------|------------|
+| 逗號 | ， | , |
+| 句號 | 。 | . |
+| 頓號（列舉） | 、 | , |
+| 冒號 | ： | : |
+| 分號 | ； | ; |
+| 問號 | ？ | ? |
+| 驚嘆號 | ！ | ! |
+| 引號 | 「」『』 | "" '' |
+| 括號 | （） | () |
+| 刪節號 | …… | ... |
+| 破折號 | —— | -- |
+
+例外情況（可以用半形）：
+- 英文句子中的標點維持半形：`Fine-tuning is not fine.`
+- 純英文括號內的內容：`（見 Fig. 3）`
+- 技術代碼或指令：`pip install`、`API key`
+- hashtag 本身：`#AI技術`
+
+範例對照：
+- ✅ "OpenAI 把 GPT-5 的推理能力提升了，但成本也跟著上去了。"
+- ❌ "OpenAI把GPT-5的推理能力提升了,但成本也跟著上去了."
+- ✅ "這裡有幾個重點：模型大小、訓練資料、以及推理速度。"
+- ❌ "這裡有幾個重點:模型大小,訓練資料,以及推理速度."
+- ✅ "他們用了一個蠻有趣的方法——直接把 LoRA 疊上去。"
+- ❌ "他們用了一個蠻有趣的方法--直接把LoRA疊上去。"
 
 ### Tone & Style Guide — 像真人說話，不要像 AI
 
@@ -126,8 +178,10 @@ Before presenting the translated content:
 1. **唸出來順不順？** — 如果唸出來覺得彆扭，就要改
 2. **朋友看到會覺得是你寫的嗎？** — 要像真人的發文風格
 3. **有沒有 AI 八股文？** — 檢查上面「不要這樣寫」的清單
-4. Technical terms are accurate and consistent
-5. No fabricated information beyond the original
-6. Commentary adds genuine insight (not generic filler)
-7. Total length fits within Threads character limit
-8. Attribution to original author is included
+4. **中英文之間有空格嗎？** — 每個英文單字、數字前後都要有空格
+5. **標點符號正確嗎？** — 中文內容用全形標點，不要混用半形
+6. Technical terms are accurate and consistent
+7. No fabricated information beyond the original
+8. Commentary adds genuine insight (not generic filler)
+9. Total length fits within Threads character limit
+10. Attribution to original author is included
